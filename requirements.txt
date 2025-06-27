@@ -1,0 +1,7 @@
+eclipse-sumo>=1.23.0
+sumo-rl>=1.4.3
+spade>=4.1.0
+numpy>=1.21.0
+gymnasium>=0.29.0
+aiohttp>=3.8.0
+aiohttp-jinja2>=1.5.0 

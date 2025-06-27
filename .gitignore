@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+
+# Conda
+*.conda
+*.condarc
+
+# SPADE
+spade.db
+
+# Project specific
+models/*.npy
+models/*.npz
+output/
+*.log
+*.xml.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker volumes
+ejabberd-data/
