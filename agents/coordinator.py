@@ -6,44 +6,35 @@ from datetime import datetime
 import numpy as np
 
 
-class CoordinatorAgent(Agent):
-    """SPADE agent that coordinates and monitors all traffic light agents"""
-    
+class CoordinatorAgent(Agent):    
     def __init__(self, jid, password):
         super().__init__(jid, password)
-        self.statistics = {}  # Store stats for each intersection
+        self.statistics = {}
         self.start_time = None
         
     async def setup(self):
-        """Initialize coordinator agent"""
         print(f"CoordinatorAgent starting...")
         self.start_time = datetime.now()
         
-        # Wait a bit to ensure proper connection
         await asyncio.sleep(1)
         
-        # Add message receiving behaviour
         receive_behaviour = ReceiveStatsBehaviour()
         template = Template()
         template.set_metadata("performative", "inform")
         self.add_behaviour(receive_behaviour, template)
         
-        # Add periodic reporting behaviour
-        report_behaviour = ReportStatsBehaviour(period=30)  # Report every 30 seconds
+        report_behaviour = ReportStatsBehaviour(period=30)
         self.add_behaviour(report_behaviour)
         
         print("CoordinatorAgent initialized successfully")
 
 
-class ReceiveStatsBehaviour(CyclicBehaviour):
-    """Behaviour that receives statistics from intersection agents"""
-    
+class ReceiveStatsBehaviour(CyclicBehaviour):    
     def __init__(self):
         super().__init__()
     
     async def run(self):
-        """Receive and process statistics messages"""
-        msg = await self.receive(timeout=1)  # 1 second timeout
+        msg = await self.receive(timeout=1)
         
         if msg:
             try:
@@ -56,7 +47,6 @@ class ReceiveStatsBehaviour(CyclicBehaviour):
                     key, value = part.split(':')
                     stats[key] = float(value)
                 
-                # Update statistics
                 if tls_id not in self.agent.statistics:
                     self.agent.statistics[tls_id] = {
                         'queue_history': [],
@@ -68,7 +58,6 @@ class ReceiveStatsBehaviour(CyclicBehaviour):
                 self.agent.statistics[tls_id]['waiting_history'].append(stats['waiting'])
                 self.agent.statistics[tls_id]['last_update'] = datetime.now()
                 
-                # Keep only last 100 values to avoid memory issues
                 if len(self.agent.statistics[tls_id]['queue_history']) > 100:
                     self.agent.statistics[tls_id]['queue_history'].pop(0)
                     self.agent.statistics[tls_id]['waiting_history'].pop(0)
@@ -77,18 +66,14 @@ class ReceiveStatsBehaviour(CyclicBehaviour):
                 print(f"Error processing message: {e}")
     
     async def on_start(self):
-        """Called when behaviour starts"""
         print("Coordinator started receiving statistics")
 
 
 class ReportStatsBehaviour(PeriodicBehaviour):
-    """Behaviour that periodically reports aggregated statistics"""
-
     def __init__(self, period):
         super().__init__(period=period)
     
     async def run(self):
-        """Generate and display statistics report"""
         if not self.agent.statistics:
             print("No statistics available yet...")
             return
@@ -103,7 +88,7 @@ class ReportStatsBehaviour(PeriodicBehaviour):
         
         for tls_id, stats in self.agent.statistics.items():
             if stats['queue_history']:
-                avg_queue = np.mean(stats['queue_history'][-10:])  # Last 10 readings
+                avg_queue = np.mean(stats['queue_history'][-10:])
                 avg_waiting = np.mean(stats['waiting_history'][-10:])
                 
                 print(f"\nIntersection {tls_id}:")
@@ -115,7 +100,6 @@ class ReportStatsBehaviour(PeriodicBehaviour):
                 total_queue += avg_queue
                 total_waiting += avg_waiting
         
-        # Global statistics
         print("\n" + "-"*60)
         print("GLOBAL STATISTICS:")
         print(f"  Total Average Queue: {total_queue:.2f} vehicles")
@@ -124,9 +108,7 @@ class ReportStatsBehaviour(PeriodicBehaviour):
         print("="*60 + "\n")
     
     async def on_start(self):
-        """Called when behaviour starts"""
         print("Coordinator started reporting statistics")
 
     async def on_end(self):
-        """Called when behaviour ends"""
         print(f"Coordinator stopped reporting statistics") 

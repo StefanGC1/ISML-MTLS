@@ -17,22 +17,16 @@ else:
     sys.exit("Please declare environment variable 'SUMO_HOME'")
 
 
-class BaselineSimulation:
-    """Run SUMO simulation with default fixed-time traffic lights"""
-    
+class BaselineSimulation:    
     def __init__(self, use_gui=False, duration=1800):
         self.use_gui = use_gui
         self.duration = duration  # Simulation duration in seconds
         self.start_time = None
         
     def start_sumo(self):
-        """Start SUMO simulation with statistics output"""
         sumo_binary = "sumo-gui" if self.use_gui else "sumo"
         
-        # Create output directory
-        os.makedirs("output/baseline", exist_ok=True)
-        
-        # Get current timestamp for unique filenames
+        os.makedirs("output/baseline", exist_ok=True)        
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         
         sumo_cmd = [
@@ -49,8 +43,8 @@ class BaselineSimulation:
             "--summary-output", f"output/baseline/summary_{timestamp}.xml",
             "--statistic-output", f"output/baseline/statistics_{timestamp}.xml",
             "--queue-output", f"output/baseline/queue_{timestamp}.xml",
-            "--summary-output.period", "60",  # Output summary every 60 seconds
-            "--queue-output.period", "60",  # Queue output every 60 seconds
+            "--summary-output.period", "60",
+            "--queue-output.period", "60",
             "--end", str(self.duration)
         ]
         
@@ -61,7 +55,6 @@ class BaselineSimulation:
         return timestamp
         
     def run_simulation(self):
-        """Run the baseline simulation"""
         self.start_time = time.time()
         step = 0
         
@@ -106,7 +99,6 @@ class BaselineSimulation:
         print(f"\nBaseline simulation completed in {elapsed:.1f} seconds")
         
     def print_traffic_light_info(self):
-        """Print information about traffic lights and their programs"""
         tls_ids = traci.trafficlight.getIDList()
         print(f"\nTraffic lights in network: {tls_ids}")
         
@@ -122,11 +114,10 @@ class BaselineSimulation:
             if logic:
                 phases = logic[0].phases
                 print(f"  Total phases: {len(phases)}")
-                for i, phase in enumerate(phases[:4]):  # Show first 4 phases
+                for i, phase in enumerate(phases[:4]):
                     print(f"    Phase {i}: duration={phase.duration}s, state={phase.state}")
     
     def cleanup(self):
-        """Clean up simulation"""
         try:
             traci.close()
         except:
@@ -136,7 +127,6 @@ class BaselineSimulation:
 
 
 def main():
-    """Main entry point"""
     import argparse
     
     parser = argparse.ArgumentParser(description="Run baseline SUMO simulation")
@@ -145,17 +135,11 @@ def main():
                         help="Simulation duration in seconds (default: 1800)")
     args = parser.parse_args()
     
-    # Create and run simulation
     sim = BaselineSimulation(use_gui=args.gui, duration=args.duration)
     
     try:
-        # Start SUMO
         timestamp = sim.start_sumo()
-        
-        # Print traffic light information
-        sim.print_traffic_light_info()
-        
-        # Run simulation
+        sim.print_traffic_light_info()        
         sim.run_simulation()
         
         print(f"\nOutput files saved with timestamp: {timestamp}")
@@ -169,7 +153,6 @@ def main():
         print(f"Error during simulation: {e}")
         
     finally:
-        # Cleanup
         sim.cleanup()
 
 

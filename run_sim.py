@@ -17,12 +17,10 @@ else:
     sys.exit("Please declare environment variable 'SUMO_HOME'")
 
 
-class TrafficSimulation:
-    """Main simulation class that manages SUMO and SPADE agents with built-in broker"""
-    
+class TrafficSimulation:    
     def __init__(self, use_gui=True, duration=1800):
         self.use_gui = use_gui
-        self.duration = duration  # Simulation duration in seconds
+        self.duration = duration
         self.agents = []
         self.coordinator = None
         self.sumo_thread = None
@@ -30,13 +28,9 @@ class TrafficSimulation:
         self.timestamp = None
         
     def start_sumo(self):
-        """Start SUMO simulation"""
         sumo_binary = "sumo-gui" if self.use_gui else "sumo"
         
-        # Create output directory for RL results
-        os.makedirs("output/rl", exist_ok=True)
-        
-        # Get current timestamp for unique filenames
+        os.makedirs("output/rl", exist_ok=True)        
         from datetime import datetime
         self.timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         
@@ -47,15 +41,15 @@ class TrafficSimulation:
             ("--start" if self.use_gui else "--no-step-log"),
             "--quit-on-end",
             "--delay", "50" if self.use_gui else "0",
-            "--time-to-teleport", "-1",  # Disable teleporting
+            "--time-to-teleport", "-1",
             "--no-warnings",
             "--duration-log.statistics",
             "--tripinfo-output", f"output/rl/tripinfo_{self.timestamp}.xml",
             "--summary-output", f"output/rl/summary_{self.timestamp}.xml",
             "--statistic-output", f"output/rl/statistics_{self.timestamp}.xml",
             "--queue-output", f"output/rl/queue_{self.timestamp}.xml",
-            "--summary-output.period", "60",  # Output summary every 60 seconds
-            "--queue-output.period", "60",  # Queue output every 60 seconds
+            "--summary-output.period", "60",
+            "--queue-output.period", "60",
             "--end", str(self.duration)
         ]
         
@@ -66,18 +60,14 @@ class TrafficSimulation:
         return self.timestamp
         
     def create_agents(self):
-        """Create SPADE agents using built-in broker (no external XMPP server needed)"""
-        # Get all traffic lights from SUMO
         tls_ids = traci.trafficlight.getIDList()
         print(f"Found traffic lights: {tls_ids}")
         
-        # Create coordinator agent - using built-in broker (localhost domain)
         self.coordinator = CoordinatorAgent(
             jid="coordinator@localhost", 
             password="password"
         )
         
-        # Create intersection agents - using built-in broker
         for i, tls_id in enumerate(tls_ids):
             agent_name = f"tls_{tls_id}".lower()
             agent_jid = f"{agent_name}@localhost"
@@ -92,28 +82,22 @@ class TrafficSimulation:
         return tls_ids
     
     async def start_agents(self):
-        """Start all SPADE agents with built-in broker"""
         print("Starting SPADE agents...")
         
-        # Start coordinator
         await self.coordinator.start()
         print("Coordinator agent started")
         
-        # Start intersection agents
         for agent in self.agents:
             await agent.start()
             print(f"Started agent for {agent.tls_id}")
         
-        # Give agents time to initialize
         print("All agents started successfully!")
         await asyncio.sleep(2)
     
     def run_simulation_step(self):
-        """Run one SUMO simulation step"""
         traci.simulationStep()
         
     async def run_simulation(self):
-        """Main simulation loop"""
         self.running = True
         step = 0
         
@@ -122,28 +106,22 @@ class TrafficSimulation:
         
         try:
             while self.running and traci.simulation.getTime() < self.duration:
-                # Check if SUMO is still running
                 try:
-                    # Run SUMO step
                     self.run_simulation_step()
-                    
-                    # Small delay to synchronize with agents
                     await asyncio.sleep(0.1)
                     
                     step += 1
                     
-                    # Print progress every 100 steps
                     if step % 100 == 0:
                         sim_time = traci.simulation.getTime()
                         vehicle_count = traci.vehicle.getIDCount()
                         waiting_count = 0
                         total_waiting_time = 0
                         
-                        # Calculate waiting vehicles
                         for veh_id in traci.vehicle.getIDList():
                             speed = traci.vehicle.getSpeed(veh_id)
                             waiting_time = traci.vehicle.getWaitingTime(veh_id)
-                            if speed < 0.1:  # Vehicle is stopped
+                            if speed < 0.1:
                                 waiting_count += 1
                             total_waiting_time += waiting_time
                         
@@ -165,21 +143,17 @@ class TrafficSimulation:
         self.running = False
     
     async def stop_agents(self):
-        """Stop all SPADE agents"""
         print("\nStopping agents...")
         
-        # Stop intersection agents
         for agent in self.agents:
             await agent.stop()
         
-        # Stop coordinator
         if self.coordinator:
             await self.coordinator.stop()
         
         print("All agents stopped")
     
     def cleanup(self):
-        """Clean up simulation"""
         try:
             traci.close()
         except:
@@ -189,18 +163,14 @@ class TrafficSimulation:
 
 
 async def main():
-    """Main entry point - runs with SPADE's built-in XMPP server"""
-    # Check if Q-tables exist
     if not os.path.exists("models/q_tables.pkl"):
         print("ERROR: Q-tables not found! Please run train/train_qlearn.py first.")
         return
     
     print("Traffic MAS starting with SPADE built-in XMPP server...")
     
-    # Create output directory
     os.makedirs("output", exist_ok=True)
     
-    # Set up logging to console and file
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     log_file = f"output/sim_{timestamp}.log"
     
@@ -220,11 +190,9 @@ async def main():
             self.terminal.flush()
             self.log.flush()
     
-    # Redirect stdout to our logger
     sys.stdout = Logger(log_file)
     print(f"Logging to: {log_file}")
     
-    # Parse command line arguments
     import argparse
     parser = argparse.ArgumentParser(description="Run RL-controlled traffic simulation")
     parser.add_argument("--gui", action="store_true", help="Use SUMO GUI")
@@ -232,35 +200,22 @@ async def main():
                         help="Simulation duration in seconds (default: 1800)")
     args = parser.parse_args()
     
-    # Create simulation
     sim = TrafficSimulation(use_gui=args.gui, duration=args.duration)
     
     try:
-        # Start SUMO
-        timestamp = sim.start_sumo()
-        
-        # Create agents
-        tls_ids = sim.create_agents()
-        
-        # Start agents
-        await sim.start_agents()
-        
-        # Run simulation
+        timestamp = sim.start_sumo()        
+        tls_ids = sim.create_agents()        
+        await sim.start_agents()        
         await sim.run_simulation()
         
     except Exception as e:
         print(f"Error during simulation: {e}")
         
     finally:
-        # Stop agents
-        await sim.stop_agents()
-        
-        # Cleanup
+        await sim.stop_agents()        
         sim.cleanup()
         
-        print("\nRL-controlled simulation completed!")
-        
-        # Print output file information
+        print("\nRL-controlled simulation completed!")        
         print(f"\nOutput files saved with timestamp: {timestamp}")
         print("Files:")
         print(f"  - output/rl/tripinfo_{timestamp}.xml")
@@ -269,5 +224,5 @@ async def main():
         print(f"  - output/rl/queue_{timestamp}.xml")
 
 if __name__ == "__main__":
-    # Run with SPADE's built-in XMPP server (the True parameter starts the server)
+    # Launches SPADE native XMPP broker
     spade.run(main(), True)

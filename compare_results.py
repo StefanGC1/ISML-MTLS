@@ -12,7 +12,6 @@ from datetime import datetime
 
 
 class SimulationResults:
-    """Container for simulation statistics"""
     def __init__(self, name):
         self.name = name
         self.trips = []
@@ -20,7 +19,6 @@ class SimulationResults:
         self.final_stats = {}
         
     def parse_tripinfo(self, filename):
-        """Parse tripinfo XML file"""
         tree = ET.parse(filename)
         root = tree.getroot()
         
@@ -40,7 +38,6 @@ class SimulationResults:
             self.trips.append(trip_data)
     
     def parse_summary(self, filename):
-        """Parse summary XML file"""
         tree = ET.parse(filename)
         root = tree.getroot()
         
@@ -61,7 +58,6 @@ class SimulationResults:
             self.summary_intervals.append(step_data)
     
     def parse_statistics(self, filename):
-        """Parse statistics XML file"""
         tree = ET.parse(filename)
         root = tree.getroot()
         
@@ -70,8 +66,6 @@ class SimulationResults:
         if vehicles is not None:
             self.final_stats['total_vehicles'] = int(vehicles.get('loaded'))
             self.final_stats['total_departed'] = int(vehicles.get('inserted'))
-            # Fix: handle missing 'arrived' attribute by calculating from available data
-            # arrived = inserted - (running + waiting)
             arrived = vehicles.get('arrived')
             if arrived is not None:
                 self.final_stats['total_arrived'] = int(arrived)
@@ -81,7 +75,6 @@ class SimulationResults:
                 waiting = int(vehicles.get('waiting', 0))
                 self.final_stats['total_arrived'] = inserted - running - waiting
         
-        # Get performance statistics
         perf = root.find('vehicleTripStatistics')
         if perf is not None:
             self.final_stats['avg_duration'] = float(perf.get('duration', 0))
@@ -91,11 +84,9 @@ class SimulationResults:
             self.final_stats['total_travel_time'] = float(perf.get('totalTravelTime', 0))
     
     def calculate_statistics(self):
-        """Calculate aggregate statistics from trips"""
         if not self.trips:
             return
         
-        # Calculate statistics from individual trips
         durations = [t['duration'] for t in self.trips]
         waiting_times = [t['waitingTime'] for t in self.trips]
         time_losses = [t['timeLoss'] for t in self.trips]
@@ -115,7 +106,6 @@ class SimulationResults:
             'avg_stops_per_vehicle': np.mean([t['waitingCount'] for t in self.trips])
         }
         
-        # Calculate statistics from summary intervals
         if self.summary_intervals:
             mean_waiting_times = [s['meanWaitingTime'] for s in self.summary_intervals]
             mean_travel_times = [s['meanTravelTime'] for s in self.summary_intervals]
@@ -133,19 +123,13 @@ class SimulationResults:
 
 
 def find_latest_files(directory):
-    """Find the latest set of output files in a directory"""
-    # Find all tripinfo files
     tripinfo_files = glob.glob(os.path.join(directory, "tripinfo_*.xml"))
     if not tripinfo_files:
         return None
     
-    # Get the latest file
-    latest_tripinfo = max(tripinfo_files, key=os.path.getctime)
-    
-    # Extract timestamp
+    latest_tripinfo = max(tripinfo_files, key=os.path.getctime)    
     timestamp = os.path.basename(latest_tripinfo).replace("tripinfo_", "").replace(".xml", "")
     
-    # Build file paths
     files = {
         'tripinfo': latest_tripinfo,
         'summary': os.path.join(directory, f"summary_{timestamp}.xml"),
@@ -153,7 +137,6 @@ def find_latest_files(directory):
         'queue': os.path.join(directory, f"queue_{timestamp}.xml")
     }
     
-    # Check if all files exist
     for file_type, path in files.items():
         if not os.path.exists(path):
             print(f"Warning: {file_type} file not found: {path}")
@@ -161,14 +144,11 @@ def find_latest_files(directory):
     return files, timestamp
 
 
-def compare_simulations(baseline_dir="output/baseline", rl_dir="output/rl"):
-    """Compare baseline and RL simulation results"""
-    
+def compare_simulations(baseline_dir="output/baseline", rl_dir="output/rl"):  
     print("="*70)
     print("TRAFFIC SIMULATION COMPARISON")
     print("="*70)
     
-    # Find latest files
     baseline_files, baseline_timestamp = find_latest_files(baseline_dir)
     rl_files, rl_timestamp = find_latest_files(rl_dir)
     
@@ -245,7 +225,6 @@ def compare_simulations(baseline_dir="output/baseline", rl_dir="output/rl"):
             
             print(f"{metric_name:<25} {fmt.format(baseline_val):>15} {fmt.format(rl_val):>15} {sign}{improvement:>13.1f}%")
     
-    # Compare interval statistics
     print("\n" + "="*70)
     print("INTERVAL STATISTICS (60-second averages)")
     print("="*70)
@@ -297,12 +276,12 @@ def compare_simulations(baseline_dir="output/baseline", rl_dir="output/rl"):
         travel_time_reduction = (baseline.trip_stats['avg_duration'] - rl.trip_stats['avg_duration']) / baseline.trip_stats['avg_duration'] * 100
         speed_increase = (rl.trip_stats['avg_speed'] - baseline.trip_stats['avg_speed']) / baseline.trip_stats['avg_speed'] * 100
         
-        print(f"✓ Waiting time reduced by: {wait_time_reduction:.1f}%")
-        print(f"✓ Travel time reduced by: {travel_time_reduction:.1f}%")
-        print(f"✓ Average speed increased by: {speed_increase:.1f}%")
+        print(f"Waiting time reduced by: {wait_time_reduction:.1f}%")
+        print(f"Travel time reduced by: {travel_time_reduction:.1f}%")
+        print(f"Average speed increased by: {speed_increase:.1f}%")
         
         total_wait_saved = baseline.trip_stats['total_waiting_time'] - rl.trip_stats['total_waiting_time']
-        print(f"✓ Total waiting time saved: {total_wait_saved:.0f} seconds")
+        print(f"Total waiting time saved: {total_wait_saved:.0f} seconds")
         
         if total_wait_saved > 0:
             print(f"  (Equivalent to {total_wait_saved/3600:.1f} vehicle-hours saved)")
