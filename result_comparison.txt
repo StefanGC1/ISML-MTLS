@@ -1,0 +1,43 @@
+======================================================================
+TRAFFIC SIMULATION COMPARISON
+======================================================================
+
+Baseline simulation: 20250627_145714
+RL simulation:       20250627_145956
+
+======================================================================
+TRIP STATISTICS (from individual vehicles)
+======================================================================
+Metric                           Baseline   RL-controlled     Improvement
+----------------------------------------------------------------------
+Total vehicles                        543             565           0.0%
+Average travel time                 93.0s           66.3s +         28.7%
+Average waiting time                57.4s           30.6s +         46.6%
+Total waiting time               31177.0s        17311.0s +         44.5%
+Average time loss                   77.0s           50.2s +         34.8%
+Average speed                     3.1 m/s         4.0 m/s +         27.3%
+Vehicles that stopped                 464             483           0.0%
+Avg stops per vehicle                2.23            2.16           0.0%
+
+======================================================================
+INTERVAL STATISTICS (60-second averages)
+======================================================================
+Metric                           Baseline   RL-controlled     Improvement
+----------------------------------------------------------------------
+Avg mean waiting time               11.6s            7.7s +         34.2%
+Max mean waiting time               25.5s           18.0s +         29.5%
+Avg mean travel time                75.1s           54.4s +         27.6%
+Avg halting vehicles                 20.1            11.7 +         41.7%
+Max halting vehicles                   34              29 +         14.7%
+Avg mean speed                    1.7 m/s         2.7 m/s +         54.6%
+
+======================================================================
+KEY IMPROVEMENTS
+======================================================================
+✓ Waiting time reduced by: 46.6%
+✓ Travel time reduced by: 28.7%
+✓ Average speed increased by: 27.3%
+✓ Total waiting time saved: 13866 seconds
+  (Equivalent to 3.9 vehicle-hours saved)
+
+======================================================================
