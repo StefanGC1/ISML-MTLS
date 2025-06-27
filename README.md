@@ -79,7 +79,7 @@ python train_qlearn.py
 ```
 
 This will:
-- Run 400 training episodes (configurable)
+- Run 600 training episodes (configurable)
 - Save Q-tables to `models/q_tables.pkl`
 - Display training progress and average rewards
 - Takes around an hour
