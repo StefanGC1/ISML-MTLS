@@ -6,6 +6,8 @@ import time
 from threading import Thread
 import traci
 import spade
+import shutil
+import glob
 from agents.intersection import IntersectionAgent
 from agents.coordinator import CoordinatorAgent
 
@@ -27,10 +29,30 @@ class TrafficSimulation:
         self.running = False
         self.timestamp = None
         
+    def clear_output_directory(self, directory):
+        """Clear all files in the specified output directory"""
+        if os.path.exists(directory):
+            files = glob.glob(os.path.join(directory, "*"))
+            for file in files:
+                try:
+                    if os.path.isfile(file):
+                        os.remove(file)
+                        print(f"Deleted: {file}")
+                    elif os.path.isdir(file):
+                        shutil.rmtree(file)
+                        print(f"Deleted directory: {file}")
+                except Exception as e:
+                    print(f"Error deleting {file}: {e}")
+            if files:
+                print(f"Cleared {len(files)} files/directories from {directory}")
+        
     def start_sumo(self):
         sumo_binary = "sumo-gui" if self.use_gui else "sumo"
         
-        os.makedirs("output/rl", exist_ok=True)        
+        # Clear existing RL output files
+        os.makedirs("output/rl", exist_ok=True)
+        self.clear_output_directory("output/rl")
+        
         from datetime import datetime
         self.timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         

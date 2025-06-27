@@ -7,6 +7,8 @@ import os
 import sys
 import time
 import traci
+import shutil
+import glob
 from datetime import datetime
 
 # SUMO configuration
@@ -23,10 +25,30 @@ class BaselineSimulation:
         self.duration = duration  # Simulation duration in seconds
         self.start_time = None
         
+    def clear_output_directory(self, directory):
+        """Clear all files in the specified output directory"""
+        if os.path.exists(directory):
+            files = glob.glob(os.path.join(directory, "*"))
+            for file in files:
+                try:
+                    if os.path.isfile(file):
+                        os.remove(file)
+                        print(f"Deleted: {file}")
+                    elif os.path.isdir(file):
+                        shutil.rmtree(file)
+                        print(f"Deleted directory: {file}")
+                except Exception as e:
+                    print(f"Error deleting {file}: {e}")
+            if files:
+                print(f"Cleared {len(files)} files/directories from {directory}")
+        
     def start_sumo(self):
         sumo_binary = "sumo-gui" if self.use_gui else "sumo"
         
-        os.makedirs("output/baseline", exist_ok=True)        
+        # Clear existing baseline output files
+        os.makedirs("output/baseline", exist_ok=True)
+        self.clear_output_directory("output/baseline")
+        
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         
         sumo_cmd = [
